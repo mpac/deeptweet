@@ -1,0 +1,192 @@
+# Copyright 2011, Global Enterprise and Initiative Group, LLC, and
+# Michael Pacchioli.
+# 
+# This file is part of DeepTweet.
+#
+# DeepTweet is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 3,
+# as published by the Free Software Foundation.
+#
+# DeepTweet is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with DeepTweet.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+DEEPTWEET INSTALLATION PROCESS:
+
+DeepTweet requires Django, MySQL, and the Sphinx text search engine.  This
+installation guide is based on Apache and mod_python, but other configurations
+can be used.
+
+Sphinx 0.9.9 stable is used here.  If you use a more recent version, you will
+have to change SPHINX_API_VERSION in settings.py, and you might have to change
+the Sphinx config file.
+
+Centos 5.6 is used here.  The required packages may be available in other
+distributions.  Our test system is a Linux VPS with 1G RAM, but a 512M server
+might be sufficient if it's properly tuned.
+
+Some users experienced memory problems because the Apache processes grew large.
+Some strategies are upgrading RAM, limiting the number of Apache processes, and
+writing a script to restart Sphinx if it shuts down unexpectedly.
+
+Please consider contacting us on GitHub if you use this product.  We'd love to
+hear what it's being used for!
+
+
+1) Install the required packages.
+
+# yum install python-devel
+# yum install python-setuptools
+# yum install mod_python
+
+# easy_install django
+# easy_install django-sphinx
+# easy_install mysql-python
+# easy_install simplejson
+# easy_install python-twitter
+# easy_install oauth2
+
+
+2) Create the database.
+
+In MySQL:
+
+> create database dt;
+> grant all on dt.* to dt@localhost identified by 'password';
+
+
+3) Clone the repository and configure Apache.  Make one VirtualHost for the
+app and one for the media directory, which currently only contains the admin
+interface media.
+
+# git clone git@github.com:mpac/deeptweet
+# mv deeptweet /var/www/vhosts
+
+Sample Apache VirtualHost configuration:
+
+<VirtualHost *:80>
+    ServerName dt.example.com
+
+    DocumentRoot /var/www/vhosts/deeptweet/dt
+    ErrorLog logs/dt_error_log
+    CustomLog logs/dt_access_log common
+
+    <Location "/">
+        SetHandler mod_python
+
+        PythonHandler django.core.handlers.modpython
+        PythonPath "['/var/www/vhosts/deeptweet'] + sys.path"
+
+        SetEnv DJANGO_SETTINGS_MODULE dt.settings
+        SetEnv PYTHON_EGG_CACHE /tmp
+
+        PythonDebug On
+     </Location>
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName media.dt.example.com
+
+    DocumentRoot /var/www/vhosts/deeptweet/dt_media
+    ErrorLog logs/media_dt_error_log
+    CustomLog logs/media_dt_access_log common
+</VirtualHost>
+
+
+4) Copy the sample Django config file to the main app directory.  Then 
+edit at least DATABASES, MEDIA_ROOT, MEDIA_URL, STATIC_ROOT, STATIC_URL,
+ADMIN_MEDIA_PREFIX, STATICFILES_DIRS, SECRET_KEY, and TEMPLATE_DIRS in the
+active file.
+
+# cp /var/www/vhosts/deeptweet/etc/settings.py \
+/var/www/vhosts/deeptweet/dt/settings.py
+
+
+5) Create the database tables.
+
+# cd /var/www/vhosts/deeptweet/dt
+# python manage.py syncdb
+
+
+6) Change the encoding of two tables to UTF-8.  This is needed to store the tweets
+properly.  Do this manually or apply the file etc/utf8.sql:
+
+ALTER TABLE core_tweet CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
+ALTER TABLE core_processedtweet CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+
+7) Insert the default Modifier and Radius data.  Do this manually or apply the 
+file etc/base.sql:
+
+insert into core_modifier (city, data) values ('None', '[\'\']');
+insert into core_radius (city, data) values ('None', 'None');
+
+
+8) Download and compile the Sphinx text search engine.
+
+# wget http://sphinxsearch.com/files/sphinx-0.9.9.tar.gz
+# tar xvzf sphinx-0.9.9.tar.gz 
+# cd sphinx-0.9.9
+# ./configure --prefix=/usr/local/sphinx
+# make
+# make install
+
+
+9) Move the sample Sphinx config file to the active config directory. Then
+edit the active sphinx.conf to change the database settings.
+
+# cp /var/www/vhosts/deeptweet/etc/sphinx.conf /usr/local/sphinx/etc/
+
+
+10) Create the index called "tweet_index".  Then start Sphinx (searchd).
+
+# /usr/local/sphinx/bin/indexer tweet_index
+# /usr/local/sphinx/bin/searchd
+
+
+11) Put "/usr/local/sphinx/bin/searchd" in /etc/init.d/rc.local, or add it 
+to your system init in another way.
+
+
+12) Copy the cron scripts to a bin directory.  dt1.sh harvests tweets from 
+Twitter and indexes the Tweet table.  dt2.sh runs the local search.  Then edit
+the active dt1.sh and dt2.sh so they contain the proper domains.
+
+# mkdir /root/bin
+# cd /root/bin
+# cp /var/www/vhosts/deeptweet/etc/dt1.sh .
+# cp /var/www/vhosts/deeptweet/etc/dt2.sh .
+# chmod 700 dt1.sh dt2.sh
+
+
+13) Schedule harvesting and processing with "crontab -e".
+
+Example crontab lines:
+
+0,10,20,30,40,50 * * * * /root/bin/dt1.sh
+5,15,25,35,45,55 * * * * /root/bin/dt2.sh
+
+A comfortable gap between dt1.sh and dt2.sh is recommended. Keep an eye on this
+if the data sets get large.
+
+Archive and remove the data in the Processed Tweet table if disk space or MySQL
+performance becomes an issue.
+
+
+14) Restart Apache.
+
+# /etc/init.d/httpd restart
+
+
+15) Visit your site.
+
+Results page: dt.example.com
+Admin interface: dt.example.com/admin
+Twitter harvesting (Phase I): dt.example.com/harvest
+Local processing (Phase II): dt.example.com/process
