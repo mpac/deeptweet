@@ -85,7 +85,8 @@ def search(item):
 			log.debug('RADIUS DATA LENGTH: %d' % (len(geocode)))
 
 			search_log = SearchLog.objects.filter(
-				item = item.id, spelling = spelling.id, modifier = modifier, radius = item.radius
+				item = item.id, spelling = spelling.text, modifier = modifier,
+				radius = item.radius
 			).order_by(
 				'-last_twitter_id'
 			)
@@ -95,7 +96,7 @@ def search(item):
 			else:
 				twitter_since_id = None
 
-			log.debug('SINCE TWEET ID: ' + twitter_since_id)
+			log.debug('SINCE TWEET ID: ' + str(twitter_since_id))
 
 			search = None
 			search_error = False
@@ -129,7 +130,7 @@ def search(item):
 				search_log = SearchLog()
 
 				search_log.item = item
-				search_log.spelling = spelling
+				search_log.spelling = spelling.text
 				search_log.modifier = modifier
 				search_log.radius = item.radius
 
@@ -151,7 +152,7 @@ def search(item):
 
 def process(request):
 
-	# Order by position descending so higher priority targets and spellings
+	# Order by position descending so higher priority targets
 	# are evaluated last and will overwrite previous information.
 	#
 	# This matches Tweets with targets of type "word", currently the only implemented
@@ -160,20 +161,16 @@ def process(request):
 	targets = Target.objects.filter(type='word', active=True).order_by('-position')
 
 	for target in targets:
-		for spelling in target.targetspelling_set.all().order_by('-position'):
+		for spelling in target.targetspelling_set.all():
 			log.debug('TARGET SPELLING: ' + spelling.text)
 			spelling_text = spelling.text.lower()
 
 			tweets = Tweet.search.query(spelling_text)
 
-			if len(tweets):
-				log.debug('TWEETS: %d' % (len(tweets)))
+			for tweet in tweets[0:tweets.count()]:
+				log.debug('MATCHED TARGET SPELLING: ' + spelling.text)
+				handler.set_word_target(tweet, target, spelling)
 
-				for tweet in tweets:
-					handler.set_word_target(tweet, target, spelling)
-
-	matched_tweets = Tweet.objects.filter(approved = True)
-	match_count = len(matched_tweets)
 
 	# If desired, run additional processing using new functions you create,
 	# for example, regular expression processing.
@@ -184,10 +181,15 @@ def process(request):
 	#	handler.process_patterns(tweet)
 
 
+	matched_tweets = Tweet.objects.filter(approved = True)
+	match_count = len(matched_tweets)
+
+
 	# Move all Tweets to the ProcessedTweet table, whether or not
 	# they are approved (matched with Targets).
 
-	tweets = Tweet.objects.all()
+	# tweets = Tweet.objects.all()
+	tweets = Tweet.objects.filter()
 
 	for tweet in tweets:
 		handler.move_tweet(tweet)
@@ -208,3 +210,4 @@ def show_results(request):
 		{ 'tweets': tweets },
 		context_instance = RequestContext(request)
 	)
+

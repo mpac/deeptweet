@@ -59,6 +59,8 @@ class TweetHandler:
 		self.tweet.twitter_user = data.user.screen_name
 		self.tweet.text = data.text
 
+		log.debug(self.tweet.text)
+
 		try:
 			self.tweet.save()
 		except:
@@ -81,9 +83,9 @@ class TweetHandler:
 	# make a new function set_x_target, where x is the new
 	# Target type name.
 
-	def set_word_target(self, tweet, target, target_spelling):
+	def set_word_target(self, tweet, target, spelling):
 		tweet.target = target
-		tweet.target_spelling = target_spelling
+		tweet.target_spelling = spelling.text
 
 		tweet.date_matched = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 		tweet.approved = True
@@ -154,4 +156,5 @@ class TweetHandler:
 
 	def set_clone_targets(self):
 		self.tweet_clone.target = self.tweet.target
-		self.tweet_clone.target_spelling = self.tweet_clone.target_spelling
+		self.tweet_clone.target_spelling = self.tweet.target_spelling
+

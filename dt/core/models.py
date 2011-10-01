@@ -40,10 +40,21 @@ class Radius(models.Model):
 	def __unicode__(self):
 		return self.data
 
+	# Prevent editing for record consistency
 
+	def save(self):
+		if self.pk:
+			return
+		else:
+			super(TargetSpelling, self).save()
+
+
+
+# Editing control is provided by admin.py
 
 class Item(models.Model):
 	name = models.CharField(max_length=100)
+	position = models.IntegerField()
 
 	modifier = models.ForeignKey(Modifier)
 	radius = models.ForeignKey(Radius)	
@@ -57,6 +68,8 @@ class Item(models.Model):
 		return self.name
 
 
+
+# Editing control is provided by admin.py
 
 class Target(models.Model):
 	name = models.CharField(max_length=100)
@@ -76,6 +89,9 @@ class Target(models.Model):
 
 
 
+# Editing and deletion control are not needed because
+# Spellings are saved in Tweets as text.
+
 class AbstractSpelling(models.Model):
 	class Meta:
 		abstract = True
@@ -93,29 +109,10 @@ class AbstractSpelling(models.Model):
 class ItemSpelling(AbstractSpelling):
 	item = models.ForeignKey(Item)
 
-	def save(self):
-		if self.pk:
-			return
-		else:
-			super(ItemSpelling, self).save()
 
-	def delete(self):
-		return
-
-	
 
 class TargetSpelling(AbstractSpelling):
 	target = models.ForeignKey(Target)
-	position = models.IntegerField()
-
-	def save(self):
-		if self.pk:
-			return
-		else:
-			super(TargetSpelling, self).save()
-
-	def delete(self):
-		return
 
 
 
@@ -124,7 +121,7 @@ class AbstractTweet(models.Model):
 		abstract = True
 
 	item = models.ForeignKey(Item)
-	item_spelling = models.ForeignKey(ItemSpelling)
+	item_spelling = models.CharField(max_length=100)
 	modifier = models.CharField(max_length=100)
 	radius = models.ForeignKey(Radius)
 
@@ -148,8 +145,8 @@ class AbstractTweet(models.Model):
 
 
 class Tweet(AbstractTweet):
-	target = models.ForeignKey(Target, related_name='t_target', null=True)
-	target_spelling = models.ForeignKey(TargetSpelling, related_name='t_target_spelling', null=True)
+	target = models.ForeignKey(Target, null=True)
+	target_spelling = models.CharField(max_length=100, null=True)
 
 	search = SphinxSearch(
 		index ='tweet_index', 
@@ -161,8 +158,10 @@ class Tweet(AbstractTweet):
 
 
 class ProcessedTweet(AbstractTweet):
-	target = models.ForeignKey(Target, related_name='pt_target', null=True)
-	target_spelling = models.ForeignKey(TargetSpelling, related_name='pt_target_spelling', null=True)	
+	# target = models.ForeignKey(Target, related_name='pt_target', null=True)
+	# target_spelling = models.ForeignKey(TargetSpelling, related_name='pt_target_spelling', null=True)	
+	target = models.ForeignKey(Target, null=True)
+	target_spelling = models.CharField(max_length=100, null=True)
 
 	def __unicode__(self):
 		return self.twitter_id + ': ' + self.text
@@ -171,7 +170,7 @@ class ProcessedTweet(AbstractTweet):
 
 class SearchLog(models.Model):
 	item = models.ForeignKey(Item)
-	spelling = models.ForeignKey(ItemSpelling)
+	spelling = models.CharField(max_length=100)
 	modifier = models.CharField(max_length=100)
 	radius = models.ForeignKey(Radius)
 
@@ -186,3 +185,4 @@ class SearchLog(models.Model):
 
 	def __unicode__(self):
 		return str(self.id)
+

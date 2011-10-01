@@ -1,0 +1,83 @@
+# Copyright 2011, Global Enterprise and Initiative Group, LLC, and
+# Michael Pacchioli.
+# 
+# This file is part of DeepTweet.
+#
+# DeepTweet is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 3,
+# as published by the Free Software Foundation.
+#
+# DeepTweet is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with DeepTweet.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+DEEPTWEET DOCUMENTATION
+
+
+I. OVERVIEW
+
+DeepTweet is a two-phase Twitter search platform.  It allows you to cast a wide 
+net using the Twitter Search API and then refine the results locally.  You can 
+thus search for many combinations of words without worrying about API limits, 
+and perform sophisticated analyses on the data.
+
+
+II. INSTALLATION
+
+For installation instructions, see the "install.txt" file included in this 
+distribution.
+
+
+III. ITEMS
+
+Items contain terms, Item Spellings, that are Twitter search terms.  For 
+example, an Item named "Open Source" could contain Spellings "open 
+source", "open src", "opensource", and "opensrc".
+
+Spellings are required and the Item name is NOT used as a search term.
+
+Twitter hashtags are allowed but they are usually not required for good search 
+results.
+
+
+IV. TARGETS
+
+Targets contain terms, Target Spellings, that are local search terms.  For
+example, a Target named "Linux" could contain Spellings "linux", "lnux", 
+"linx", and "lnx".
+
+Spellings are required and the Target name is NOT used as a search term.
+
+Feel free to experiment with Sphinx search symbols.
+
+
+V. RADII AND MODIFIERS
+
+Radii and Modifiers are used to provide location based searches.  They will be 
+documented later.  For now, just use the defaults, or see how they work by 
+reading the source code.
+
+
+VI. SYSTEM EXECUTION
+
+dt1.sh harvests tweets from Twitter and indexes the Tweet table.  dt2.sh runs 
+the local search.  Each new batch of Tweets is then moved from the Tweet table 
+to the Processed Tweet table to keep the indexer running quickly for future 
+batches.
+
+
+VII. ADMINISTRATION TIPS
+
+To be documented later.
+
+
+VIII. EXTENDING THE SYSTEM
+
+To be documented later.
+

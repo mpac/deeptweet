@@ -27,24 +27,23 @@ from django.contrib import admin
 
 
 class TweetAdmin(admin.ModelAdmin):
-	list_filter = ['item', 'item_spelling', 'modifier', 'radius']
+	list_filter = [
+		'item', 'modifier', 'radius'
+	]
 
 
 
 class ProcessedTweetAdmin(admin.ModelAdmin):
-	list_filter = ['item', 'item_spelling', 'modifier', 'radius', 'approved']
+	list_filter = [
+		'item', 'target',
+		'modifier', 'radius', 'approved'
+	]
 
 
 
 class ItemSpellingInline(admin.TabularInline):
 	model = ItemSpelling
 	extra = 5
-
-	def get_readonly_fields(self, request, obj=None):
-		if obj:
-			return ['text']
-
-		return self.readonly_fields
 
 
 
@@ -55,9 +54,9 @@ class TargetSpellingInline(admin.TabularInline):
 
 
 class ItemAdmin(admin.ModelAdmin):
-	# inlines = [
-	# 	ItemSpellingInline
-	# ]
+	inlines = [
+	 	ItemSpellingInline
+	]
 
 	def get_readonly_fields(self, request, obj=None):
 		if obj: # when editing an object
@@ -87,3 +86,4 @@ admin.site.register(Tweet, TweetAdmin)
 admin.site.register(ProcessedTweet, ProcessedTweetAdmin)
 admin.site.register(SearchLog)
 admin.site.register(Target, TargetAdmin)
+
